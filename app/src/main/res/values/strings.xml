@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">MapActivityRecognition</string>
+    <string name="title_activity_maps">Map</string>
+    <string name="still">You are Still</string>
+    <string name="running">You are Running</string>
+    <string name="walking">You are Walking</string>
+    <string name="driving">You are In Vehicle</string>
+</resources>
