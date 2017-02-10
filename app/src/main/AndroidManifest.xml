@@ -33,6 +33,16 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
 
+        <receiver android:name=".MyReceiver" >
+            <intent-filter>
+                <action android:name="com.example.jeffrey.mapactivityrecognition.ActivityRecognizedService">
+
+                </action>
+            </intent-filter>
+        </receiver>
+
+        <service android:name=".ActivityRecognizedService" />
+
         <activity
             android:name=".MapsActivity"
             android:label="@string/title_activity_maps">

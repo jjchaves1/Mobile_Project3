@@ -19,13 +19,22 @@ import org.w3c.dom.Text;
 
 public class MyReceiver extends BroadcastReceiver {
 
-    Bitmap bm;
-    ImageView image;
-    TextView textView;
+    private Bitmap bm;
+    private ImageView image;
+    private TextView textView;
+    private boolean prepared = false;
 
     public MyReceiver(ImageView i, TextView t, Context context) {
         MapsActivity.mediaPlayer = MediaPlayer.create(context, R.raw.beat_02);
         MapsActivity.mediaPlayer.setLooping(true);
+
+        MapsActivity.mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+            @Override
+            public void onPrepared(MediaPlayer mp) {
+                prepared = true;
+            }
+        });
+
         image = i;
         textView = t;
     }
@@ -36,6 +45,8 @@ public class MyReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         Bundle bundle = intent.getExtras();
+        System.out.println("RECEIVED BROADCAST");
+
 
         if (bundle != null) {
             int imageFile = (int) bundle.get(ActivityRecognizedService.IMAGE);
@@ -47,10 +58,14 @@ public class MyReceiver extends BroadcastReceiver {
             // Play the music if we are walking or runnning
             if (context.getResources().getText(text).equals("You are Running") || context.getResources().getText(text).equals("You are Walking")) {
                 if (MapsActivity.mediaPlayer.isPlaying() == false) {
-                    MapsActivity.mediaPlayer.start();
+                    if(prepared) {
+                        MapsActivity.mediaPlayer.start();
+                    }
                 }
             } else {
-                MapsActivity.mediaPlayer.stop();
+                if (MapsActivity.mediaPlayer.isPlaying()) {
+                    MapsActivity.mediaPlayer.pause();
+                }
             }
 
 
@@ -58,7 +73,4 @@ public class MyReceiver extends BroadcastReceiver {
         }
     }
 
-    public Bitmap getBitMap() {
-        return bm;
-    }
 }

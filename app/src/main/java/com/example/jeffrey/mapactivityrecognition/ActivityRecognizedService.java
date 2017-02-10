@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Handler;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
@@ -16,6 +17,7 @@ import com.google.android.gms.location.ActivityRecognitionResult;
 import com.google.android.gms.location.DetectedActivity;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Date;
 
@@ -23,6 +25,9 @@ import database.ActivityBaseHelper;
 import database.ActivityCursorWrapper;
 import database.ActivityDbSchema;
 import database.ActivityDbSchema.ActivityTable;
+
+import static com.example.jeffrey.mapactivityrecognition.MapsActivity.mediaPlayer;
+import static com.example.jeffrey.mapactivityrecognition.MapsActivity.toastActivity;
 
 /**
  * Created by Jeffrey on 2/9/2017.
@@ -32,19 +37,23 @@ public class ActivityRecognizedService extends IntentService {
 
     private Context mContext;
     private SQLiteDatabase mDatabase;
-    private DetectedActivity lastAct = null;
-    private Date lastDate = null;
-    private String toastActivity = null;
     public static final String IMAGE = "image";
     public static final String TEXT = "text";
-    public static final String NOTIFICATION = "name.heqian.cs528.googlefit";
+    public static final String NOTIFICATION = "com.example.jeffrey";
+    public static String temp;
+    Handler mHandler;
+
 
     public ActivityRecognizedService() {
         super("ActivityRecognizedService");
+        mHandler = new Handler();
+
     }
 
     public ActivityRecognizedService(String name) {
         super(name);
+        mHandler = new Handler();
+
     }
 
     @Override
@@ -97,26 +106,44 @@ public class ActivityRecognizedService extends IntentService {
         mDatabase = new ActivityBaseHelper(mContext).getWritableDatabase();
         String activityString;
         ContentValues vals;
+        Toast activityChangeToast = new Toast(mContext);
+        List<Integer> types = Arrays.asList(DetectedActivity.IN_VEHICLE, DetectedActivity.WALKING, DetectedActivity.ON_FOOT, DetectedActivity.RUNNING, DetectedActivity.STILL);
+        System.out.println("HANDLING DETECTED ACTIVITIES");
 
         for( DetectedActivity activity : probableActivities ) {
             if (activity.getConfidence() > highestProbActivity.getConfidence())
                 highestProbActivity = activity;
         }
-        if(lastAct != null && highestProbActivity.getType() != lastAct.getType() && lastDate != null && toastActivity != null){
-            long rightNow = new Date().getTime();
-            long minsPassed = (lastDate.getTime() - rightNow) / 60000;
-            long secsPassed = ((lastDate.getTime() - rightNow) % 60000) / 1000;
-            int duration = Toast.LENGTH_SHORT;
-            String a = "You have just " + toastActivity + " for ";
-            String b = " min, ";
-            String c = " seconds.";
-            String toastString = a + minsPassed + b + secsPassed + c;
-            Toast activityChangeToast = Toast.makeText(mContext, toastString, duration);
-            activityChangeToast.show();
+        if (types.contains(highestProbActivity.getType())) {
+            if (MapsActivity.lastAct != null && highestProbActivity.getType() != MapsActivity.lastAct.getType() && MapsActivity.lastDate != null && toastActivity != null) {
+
+                System.out.println("Inside of showing the Toast");
+                temp = toastActivity;
+
+
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        long rightNow = new Date().getTime();
+                        long minsPassed = (rightNow - MapsActivity.lastDate.getTime()) / 60000;
+                        long secsPassed = ((rightNow - MapsActivity.lastDate.getTime()) % 60000) / 1000;
+                        int duration = Toast.LENGTH_SHORT;
+                        String a = "You have just " + temp + " for ";
+                        String b = " min, ";
+                        String c = " seconds.";
+                        String toastString = a + minsPassed + b + secsPassed + c;
+                        Toast.makeText(mContext, toastString, duration).show();
+
+                    }
+                });
+
+
+            }
         }
-        if(lastAct == null && lastDate == null){
-            lastAct = highestProbActivity;
-            lastDate = new Date();
+        if(MapsActivity.lastAct == null && MapsActivity.lastDate == null){
+            System.out.println("Inside of both MapsActivity.lastAct and LastDate == Null");
+            MapsActivity.lastAct = highestProbActivity;
+            MapsActivity.lastDate = new Date();
         }
 
         switch( highestProbActivity.getType() ) {
@@ -188,12 +215,13 @@ public class ActivityRecognizedService extends IntentService {
                 break;
             }
         }
-        // Debug to print entire SQLite table as it forms
-        List<String> acts = getActivities();
-        for(String act: acts){
-            System.out.println(act);
-        }
-        System.out.println();
-        lastAct = highestProbActivity;
+//        // Debug to print entire SQLite table as it forms
+//        List<String> acts = getActivities();
+//        for(String act: acts){
+//            System.out.println(act);
+//        }
+//        System.out.println();
+        MapsActivity.lastAct = highestProbActivity;
+
     }
 }
